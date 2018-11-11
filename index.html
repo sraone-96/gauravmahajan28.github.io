@@ -100,93 +100,85 @@ Given a word that is identified from the above three methods, We use synonyms fr
                     <h3> Ranking Methods </h3>
 The main task after identifying the medical terms is to replace them with appropriate synonym so that the overall context does not change and is simpler to understand.
 We use 2 methods for ranking the synonyms.
-Splitter
-frequency
-Splitter
+Splitter<br/>
+frequency<br/>
+                    <h4>Splitter</h4>
 Given a synonym, we split the word with the synonym having highest number of splits, meaning it is more expressive and explanatory.  Tool used was pysplitter. 
 The replacement thus is made with the word that has the highest number of splits in it.
-Frequency
+                    <h4>Frequency</h4>
 We used the 'wordfreq' library to identify the frequency of word in English language. More the frequent word, more appropriate it is  to replace as simplified word.
 
-2.Using Machine Learning
+                    <h3>2.Using Machine Learning</h3>
 The paper(Exploring Neural Text Simplification Models) referred to in this project used a variation of the standard attention model to simplify the sentences. The author had used a global attention model with input feed for simplification of sentences. In the architecture, there are 2 LSTMs, one encoder and other is a decoder(hidden states of size 500 and 500 hidden units), with the attention for all the hidden layers of the decoder.
 We have Used the OpenNMT toolkit for all the training and prediction process.
 There are 3 Methods using these Long-short-term-memory cells(LSTMS) that we have tested in the project.
-Model given in the the reference paper
-Input feeding attention on decoder 
-Simple Model Without attention(seq-seq)
+1) Model given in the the reference paper <br/>
+2) Input feeding attention on decoder  <br/>
+3) Simple Model Without attention(seq-seq)  <br/>
 Classifying Data into Medical and Non-Medical using CTakes for feeding the model with only Medical sentences.
 We have Used Ctakes, a tool for identifying Medical terms in any sentence. CTakes works pretty well even on complex sentences having words like:
 Acinetobacter Infection,Acanthamoeba Infection,Adenovirus Vaccination etc.
 The tool recognizes the sentences and labels them as UMLSConcepts in an XML file.
 Hence, If the sentence contains a medical text we have separated them using CTakes as our primary classification. Other Methods described above fail sometimes showing false positives. But Ctakes doesnot miss sentences having Medical terms. 
 
-
-
-
-1.Model given in reference paper
+                    <h4> 1.Model given in reference paper </h4>
 The Model was trained on the whole dataset irrespective of the Medical presence. The predictions were done using the given pretrained values.
 Our main aim was to test the network on Medical sentences:
-Input Data: 88000 Medical text sentences.
-Predictions: On medical data with validation split(20000/88000), 3 hrs with 2 GPUs(1080Ti) and 10 cores.
+Input Data: 88000 Medical text sentences.<br/>
+Predictions: On medical data with validation split(20000/88000), 3 hrs with 2 GPUs(1080Ti) and 10 cores.<br/>
 
 
 As mentioned above, the model uses global input feeding attention in the decoder part of the network.
 At the end of each epoch it saves the state of the model and predicts the perplexity values of the models on the set. The training employs early-stopping and selects the model resulted from the epoch with the best perplexity to avoid over-fitting. We have tested these values and the results and their scores are given below in the final table.
 
-2.Simple Model.
+                    <h4> 2.Simple Model. </h4>
 Input feeding attention on decoder
 
-Input Data & Training: On 68000 sentences with 3 GPUs(1080 Ti) and 10 Cores for 1.5hrs.
-Predictions:With a validation split of 0.2(20000/88000).
+Input Data & Training: On 68000 sentences with 3 GPUs(1080 Ti) and 10 Cores for 1.5hrs. <br/>
+Predictions:With a validation split of 0.2(20000/88000). <br/>
 
 
 The Scores and metrics are given in the Table below.
-3.Simple Encoder Decoder Model
+                    <h4> 3.Simple Encoder Decoder Model </h4>
 In this approach, we have used Open-NMT’s simple model without attention and with same input data as before.
 Input Data & Training: On 68000 sentences with 3 GPUs(1080 Ti) and 10 Cores for 1.5hrs.
 Predictions:With a validation split of 0.2(20000/88000).
 Scores and the metrics are given below.
 
-Metrics Methods
+                    <h3> Metrics Methods </h3>
 After word is replaced with synonym, we need to check how simplified resulting sentence is with respect to original sentence. We used following metrics for the same.
 We have used 4 types of metrics:
-BLEU Score
-Rouge-L Score
-Skip Thought Sim Score
-Flesch Readability Score
-BLEU Score
+1) BLEU Score </br>
+2) Rouge-L Score </br>
+3) Skip Thought Sim Score </br>
+4) Flesch Readability Score </br>
+
+            <h4> BLEU Score </h4>
 BLEU (bilingual evaluation understudy) is an algorithm for evaluating the quality of text which has been machine-translated from one natural language to another.
 BLEU’s output is always a number between 0 and 1. This value indicates how similar the candidate text is to the reference texts, with values closer to 1 representing more similar texts.
-Rouge-L Score
+            <h4> Rouge-L Score </h4>
 The Rouge-L metric is a metric that gives the maximum matching between two sentences. L represents the longest matching subsequence. If it is 1,the matching unigrams are used for scoring, for 2 it is bigram and so on.
 The score gives three values, precision,recall and f1 scores for every 2 sentences given as an input.
 Skip Thought Sim Score
-The Skip Thought sim
+            <h4> The Skip Thought sim </h4>
 
 
 
 
 
 
-Flesch Readability Score
+<h4> Flesch Readability Score <h4> 
 This score evaluates readability of resulting sentence with respect to original sentence. Given a sentence it returns the ease of understanding it. A higher score would mean simpler sentence, and a lower score would mean it is a difficult one.
-| Score | Difficulty |
-|-------|-------------------|
-|90-100 | Very Easy |
-| 80-89 | Easy |
-| 70-79 | Fairly Easy |
-| 60-69 | Standard |
-| 50-59 | Fairly Difficult |
-| 30-49 | Difficult |
-| 0-29 | Very Confusing |
+| Score | Difficulty | <br/>
+|-------|-------------------| <br/>
+|90-100 | Very Easy | <br/>
+| 80-89 | Easy | <br/>
+| 70-79 | Fairly Easy | <br/>
+| 60-69 | Standard | <br/>
+| 50-59 | Fairly Difficult | <br/>
+| 30-49 | Difficult | <br/>
+| 0-29 | Very Confusing | <br/>
 
-
-                  
-                  
-                  
-                  
-                  
                   </i></p>
           </div>
          </div>
