@@ -48,14 +48,144 @@ The Data used was from the wikipedia corpus containing 168000 sentences having b
 
                   <h3>  Approach </h3>
 There are broadly 2 methods that we have used in this Project.
-1 ) Without Machine Learning
+1 ) Without Machine Learning <br/>
 2) Using Machine Learning 
                   
                   <h3>Without Machine Learning</h3>
-1) Identification of Medical Terms in given sentence.
-2) Finding various synonyms and ranking them according to their scores
-3) Replacing these words in the given sentences
+1) Identification of Medical Terms in given sentence.<br/>
+2) Finding various synonyms and ranking them according to their scores <br/>
+3) Replacing these words in the given sentences <br/>
 
+                <h3>  Identifying Medical Terms <h3>
+                    <h4> 1.METAMAP </h4>
+MetaMap is a tool  for Identifying terms related to medical field. Given any sentence, it tries to find predefined set of concepts in it. 
+Metamap Observations
+First we requested license for metamap and followed installation as per https://metamap.nlm.nih.gov/Installation.shtml 
+Then we used python wrapper ‘pymetamap’ to identify medical concepts in sentences. 
+We ran metamap on simple sentences like 'I had heart attack / I had kidney infection ' where it correctly identified various concepts in sentences.
+We then focussed on concept 'dsyn' representing disease / disorder. To have quantitative measure, we took random 40 statements as input and tested metamap output for ‘dsyn’ concept identification. Number of false positives was near to 6-8 from 40. We manually filtered those false positives.
+We then used ‘Wordnet’ to get synonyms of the concepts and ranked them using their frequency in english language.
+E.g.
+Sentence : There was a smallpox epidemic in 1839 that killed a large part of the population of the area .
+disease : "smallpox"
+==synonyms==
+variola = 1.85 ( value denotes their use in English language )
+smallpox = 3.32
+variola_major = 0.0
+Sentence ; A measles epidemic and food shortages during 1900 reduced the population of the area by one-third .
+disease : "measles"
+==synonyms==
+measles = 3.4
+morbilli = 0.0
+rubeola = 0.0
+It correctly helped us to transform ‘cardiac attack’ to ‘heart attack’, ‘myocardial infarction’ to ‘heart attack’ etc.
+                    <h4> 2.CliNER </h4>
+Cliner was a similar tool to identify medical terms in any given sentence.
+CliNER Observations
+Cliner provides out of the box trained model to identify medical terms. It categorizes word into one of the three categories : problem, treatment, test. We tested it on random set of sentences on which many results were false positives. To have quantitative statistics, we gave 40 random input statements for which CliNER gave 25-30 false positives. It missed true medical terms like ‘measles’. So we decided not to test synonym replacement with CliNER as performance was poor in first stage of separating medical terms itself.
+False Positive Examples :
+"chenab" 32:0 32:0||t="test"
+"chenab" 34:0 34:0||t="treatment"
+"pakistan" 29:10 29:10||t="treatment"
+"india" 30:37 30:37||t="problem"
+
+                    <h4> QUICK UMLS </h4>
+                    <h3>Synonym Replacement </h3>
+                    <h4> 1.WordNet </h4> 
+WordNet is a large lexical database of English. Nouns, verbs, adjectives and adverbs are grouped into sets of cognitive synonyms (synsets), each expressing a distinct concept. 
+Given a word that is identified from the above three methods, We use synonyms from Wordnet to replace it.
+                    <h4> 2.Mesh </h4>
+                    <h4> 3.UMLS </h4>
+
+                    <h3> Ranking Methods </h3>
+The main task after identifying the medical terms is to replace them with appropriate synonym so that the overall context does not change and is simpler to understand.
+We use 2 methods for ranking the synonyms.
+Splitter
+frequency
+Splitter
+Given a synonym, we split the word with the synonym having highest number of splits, meaning it is more expressive and explanatory.  Tool used was pysplitter. 
+The replacement thus is made with the word that has the highest number of splits in it.
+Frequency
+We used the 'wordfreq' library to identify the frequency of word in English language. More the frequent word, more appropriate it is  to replace as simplified word.
+
+2.Using Machine Learning
+The paper(Exploring Neural Text Simplification Models) referred to in this project used a variation of the standard attention model to simplify the sentences. The author had used a global attention model with input feed for simplification of sentences. In the architecture, there are 2 LSTMs, one encoder and other is a decoder(hidden states of size 500 and 500 hidden units), with the attention for all the hidden layers of the decoder.
+We have Used the OpenNMT toolkit for all the training and prediction process.
+There are 3 Methods using these Long-short-term-memory cells(LSTMS) that we have tested in the project.
+Model given in the the reference paper
+Input feeding attention on decoder 
+Simple Model Without attention(seq-seq)
+Classifying Data into Medical and Non-Medical using CTakes for feeding the model with only Medical sentences.
+We have Used Ctakes, a tool for identifying Medical terms in any sentence. CTakes works pretty well even on complex sentences having words like:
+Acinetobacter Infection,Acanthamoeba Infection,Adenovirus Vaccination etc.
+The tool recognizes the sentences and labels them as UMLSConcepts in an XML file.
+Hence, If the sentence contains a medical text we have separated them using CTakes as our primary classification. Other Methods described above fail sometimes showing false positives. But Ctakes doesnot miss sentences having Medical terms. 
+
+
+
+
+1.Model given in reference paper
+The Model was trained on the whole dataset irrespective of the Medical presence. The predictions were done using the given pretrained values.
+Our main aim was to test the network on Medical sentences:
+Input Data: 88000 Medical text sentences.
+Predictions: On medical data with validation split(20000/88000), 3 hrs with 2 GPUs(1080Ti) and 10 cores.
+
+
+As mentioned above, the model uses global input feeding attention in the decoder part of the network.
+At the end of each epoch it saves the state of the model and predicts the perplexity values of the models on the set. The training employs early-stopping and selects the model resulted from the epoch with the best perplexity to avoid over-fitting. We have tested these values and the results and their scores are given below in the final table.
+
+2.Simple Model.
+Input feeding attention on decoder
+
+Input Data & Training: On 68000 sentences with 3 GPUs(1080 Ti) and 10 Cores for 1.5hrs.
+Predictions:With a validation split of 0.2(20000/88000).
+
+
+The Scores and metrics are given in the Table below.
+3.Simple Encoder Decoder Model
+In this approach, we have used Open-NMT’s simple model without attention and with same input data as before.
+Input Data & Training: On 68000 sentences with 3 GPUs(1080 Ti) and 10 Cores for 1.5hrs.
+Predictions:With a validation split of 0.2(20000/88000).
+Scores and the metrics are given below.
+
+Metrics Methods
+After word is replaced with synonym, we need to check how simplified resulting sentence is with respect to original sentence. We used following metrics for the same.
+We have used 4 types of metrics:
+BLEU Score
+Rouge-L Score
+Skip Thought Sim Score
+Flesch Readability Score
+BLEU Score
+BLEU (bilingual evaluation understudy) is an algorithm for evaluating the quality of text which has been machine-translated from one natural language to another.
+BLEU’s output is always a number between 0 and 1. This value indicates how similar the candidate text is to the reference texts, with values closer to 1 representing more similar texts.
+Rouge-L Score
+The Rouge-L metric is a metric that gives the maximum matching between two sentences. L represents the longest matching subsequence. If it is 1,the matching unigrams are used for scoring, for 2 it is bigram and so on.
+The score gives three values, precision,recall and f1 scores for every 2 sentences given as an input.
+Skip Thought Sim Score
+The Skip Thought sim
+
+
+
+
+
+
+Flesch Readability Score
+This score evaluates readability of resulting sentence with respect to original sentence. Given a sentence it returns the ease of understanding it. A higher score would mean simpler sentence, and a lower score would mean it is a difficult one.
+| Score | Difficulty |
+|-------|-------------------|
+|90-100 | Very Easy |
+| 80-89 | Easy |
+| 70-79 | Fairly Easy |
+| 60-69 | Standard |
+| 50-59 | Fairly Difficult |
+| 30-49 | Difficult |
+| 0-29 | Very Confusing |
+
+
+                  
+                  
+                  
+                  
                   
                   </i></p>
           </div>
