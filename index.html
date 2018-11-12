@@ -1,194 +1,634 @@
-
-<html>
-    <head>
-      <!--Import Google Icon Font-->
-      <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-      <!--Import materialize.css-->
-      <link type="text/css" rel="stylesheet" href="css/materialize.min.css"  media="screen,projection"/>
-
-      <!--Let browser know website is optimized for mobile-->
-      <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-
-  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-    </head>
-
-    <body>
-      <!--Import jQuery before materialize.js-->
-      <script type="text/javascript" src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
-      <script type="text/javascript" src="js/materialize.min.js"></script>
-      <script type="text/javascript">
-      $(document).ready(function(){
-      $('.carousel').carousel();
-    });
- $(document).ready(function(){
-    $('.collapsible').collapsible();
-  });
-      </script>
-
-      <div class="container-fluid">
-
-       
-        <div class="row" id="navBar" style="background-color:black;color:black">
-         
-          <nav>
-            <div class="nav-wrapper" style="background-color:black;color:black">
-              <a href="#!" class="brand-logo">&nbsp;&nbsp;&nbsp;&nbsp;Medical Text Simplification</a>
-             
-          </div>
-            </nav>
-          </div>
-        <div class="row" style="background-color:#9ebdef;margin-top:0px">
-            
-          <div class="col md-12">
-              <p class="flow-text"><i>
-                  <h3>  Introduction </h3>
-Text Simplification is an important task in natural language processing to modify, enhance, process an existing corpus into human-readable format. Numerous methods exist that simplify a given sentence without altering the context and also work efficiently . In our project, we provide different methods to identify medical sentences and convert it into simpler text which is easier to understand.
-                  <h3>Data</h3>
-The Data used was from the wikipedia corpus containing 168000 sentences having both Medical(88000) and Non-Medical Sentences(80000). Our approaches are mostly based on Medical Sentences.
-
-                  <h3>  Approach </h3>
-There are broadly 2 methods that we have used in this Project.
-1 ) Without Machine Learning <br/>
-2) Using Machine Learning 
-                  
-                  <h3>Without Machine Learning</h3>
-1) Identification of Medical Terms in given sentence.<br/>
-2) Finding various synonyms and ranking them according to their scores <br/>
-3) Replacing these words in the given sentences <br/>
-
-                <h3>  Identifying Medical Terms <h3>
-                    <h4> 1.METAMAP </h4>
-MetaMap is a tool  for Identifying terms related to medical field. Given any sentence, it tries to find predefined set of concepts in it. 
-Metamap Observations
-First we requested license for metamap and followed installation as per https://metamap.nlm.nih.gov/Installation.shtml 
-Then we used python wrapper ‘pymetamap’ to identify medical concepts in sentences. 
-We ran metamap on simple sentences like 'I had heart attack / I had kidney infection ' where it correctly identified various concepts in sentences.
-We then focussed on concept 'dsyn' representing disease / disorder. To have quantitative measure, we took random 40 statements as input and tested metamap output for ‘dsyn’ concept identification. Number of false positives was near to 6-8 from 40. We manually filtered those false positives.
-We then used ‘Wordnet’ to get synonyms of the concepts and ranked them using their frequency in english language.
-E.g.
-Sentence : There was a smallpox epidemic in 1839 that killed a large part of the population of the area .
-disease : "smallpox"
-==synonyms==
-variola = 1.85 ( value denotes their use in English language )
-smallpox = 3.32
-variola_major = 0.0
-Sentence ; A measles epidemic and food shortages during 1900 reduced the population of the area by one-third .
-disease : "measles"
-==synonyms==
-measles = 3.4
-morbilli = 0.0
-rubeola = 0.0
-It correctly helped us to transform ‘cardiac attack’ to ‘heart attack’, ‘myocardial infarction’ to ‘heart attack’ etc.
-                    <h4> 2.CliNER </h4>
-Cliner was a similar tool to identify medical terms in any given sentence.
-CliNER Observations
-Cliner provides out of the box trained model to identify medical terms. It categorizes word into one of the three categories : problem, treatment, test. We tested it on random set of sentences on which many results were false positives. To have quantitative statistics, we gave 40 random input statements for which CliNER gave 25-30 false positives. It missed true medical terms like ‘measles’. So we decided not to test synonym replacement with CliNER as performance was poor in first stage of separating medical terms itself.
-False Positive Examples :
-"chenab" 32:0 32:0||t="test"
-"chenab" 34:0 34:0||t="treatment"
-"pakistan" 29:10 29:10||t="treatment"
-"india" 30:37 30:37||t="problem"
-
-                    <h4> QUICK UMLS </h4>
-                    <h3>Synonym Replacement </h3>
-                    <h4> 1.WordNet </h4> 
-WordNet is a large lexical database of English. Nouns, verbs, adjectives and adverbs are grouped into sets of cognitive synonyms (synsets), each expressing a distinct concept. 
-Given a word that is identified from the above three methods, We use synonyms from Wordnet to replace it.
-                    <h4> 2.Mesh </h4>
-                    <h4> 3.UMLS </h4>
-
-                    <h3> Ranking Methods </h3>
-The main task after identifying the medical terms is to replace them with appropriate synonym so that the overall context does not change and is simpler to understand.
-We use 2 methods for ranking the synonyms.
-Splitter<br/>
-frequency<br/>
-                    <h4>Splitter</h4>
-Given a synonym, we split the word with the synonym having highest number of splits, meaning it is more expressive and explanatory.  Tool used was pysplitter. 
-The replacement thus is made with the word that has the highest number of splits in it.
-                    <h4>Frequency</h4>
-We used the 'wordfreq' library to identify the frequency of word in English language. More the frequent word, more appropriate it is  to replace as simplified word.
-
-                    <h3>2.Using Machine Learning</h3>
-The paper(Exploring Neural Text Simplification Models) referred to in this project used a variation of the standard attention model to simplify the sentences. The author had used a global attention model with input feed for simplification of sentences. In the architecture, there are 2 LSTMs, one encoder and other is a decoder(hidden states of size 500 and 500 hidden units), with the attention for all the hidden layers of the decoder.
-We have Used the OpenNMT toolkit for all the training and prediction process.
-There are 3 Methods using these Long-short-term-memory cells(LSTMS) that we have tested in the project.
-1) Model given in the the reference paper <br/>
-2) Input feeding attention on decoder  <br/>
-3) Simple Model Without attention(seq-seq)  <br/>
-Classifying Data into Medical and Non-Medical using CTakes for feeding the model with only Medical sentences.
-We have Used Ctakes, a tool for identifying Medical terms in any sentence. CTakes works pretty well even on complex sentences having words like:
-Acinetobacter Infection,Acanthamoeba Infection,Adenovirus Vaccination etc.
-The tool recognizes the sentences and labels them as UMLSConcepts in an XML file.
-Hence, If the sentence contains a medical text we have separated them using CTakes as our primary classification. Other Methods described above fail sometimes showing false positives. But Ctakes doesnot miss sentences having Medical terms. 
-
-                    <h4> 1.Model given in reference paper </h4>
-The Model was trained on the whole dataset irrespective of the Medical presence. The predictions were done using the given pretrained values.
-Our main aim was to test the network on Medical sentences:
-Input Data: 88000 Medical text sentences.<br/>
-Predictions: On medical data with validation split(20000/88000), 3 hrs with 2 GPUs(1080Ti) and 10 cores.<br/>
-
-
-As mentioned above, the model uses global input feeding attention in the decoder part of the network.
-At the end of each epoch it saves the state of the model and predicts the perplexity values of the models on the set. The training employs early-stopping and selects the model resulted from the epoch with the best perplexity to avoid over-fitting. We have tested these values and the results and their scores are given below in the final table.
-
-                    <h4> 2.Simple Model. </h4>
-Input feeding attention on decoder
-
-Input Data & Training: On 68000 sentences with 3 GPUs(1080 Ti) and 10 Cores for 1.5hrs. <br/>
-Predictions:With a validation split of 0.2(20000/88000). <br/>
-
-
-The Scores and metrics are given in the Table below.
-                    <h4> 3.Simple Encoder Decoder Model </h4>
-In this approach, we have used Open-NMT’s simple model without attention and with same input data as before.
-Input Data & Training: On 68000 sentences with 3 GPUs(1080 Ti) and 10 Cores for 1.5hrs.
-Predictions:With a validation split of 0.2(20000/88000).
-Scores and the metrics are given below.
-
-                    <h3> Metrics Methods </h3>
-After word is replaced with synonym, we need to check how simplified resulting sentence is with respect to original sentence. We used following metrics for the same.
-We have used 4 types of metrics:
-1) BLEU Score </br>
-2) Rouge-L Score </br>
-3) Skip Thought Sim Score </br>
-4) Flesch Readability Score </br>
-
-            <h4> BLEU Score </h4>
-BLEU (bilingual evaluation understudy) is an algorithm for evaluating the quality of text which has been machine-translated from one natural language to another.
-BLEU’s output is always a number between 0 and 1. This value indicates how similar the candidate text is to the reference texts, with values closer to 1 representing more similar texts.
-            <h4> Rouge-L Score </h4>
-The Rouge-L metric is a metric that gives the maximum matching between two sentences. L represents the longest matching subsequence. If it is 1,the matching unigrams are used for scoring, for 2 it is bigram and so on.
-The score gives three values, precision,recall and f1 scores for every 2 sentences given as an input.
-Skip Thought Sim Score
-            <h4> The Skip Thought sim </h4>
-
-
-
-
-
-
-<h4> Flesch Readability Score </h4> 
-This score evaluates readability of resulting sentence with respect to original sentence. Given a sentence it returns the ease of understanding it. A higher score would mean simpler sentence, and a lower score would mean it is a difficult one.
-| Score | Difficulty | <br/>
-|-------|-------------------| <br/>
-|90-100 | Very Easy | <br/>
-| 80-89 | Easy | <br/>
-| 70-79 | Fairly Easy | <br/>
-| 60-69 | Standard | <br/>
-| 50-59 | Fairly Difficult | <br/>
-| 30-49 | Difficult | <br/>
-| 0-29 | Very Confusing | <br/>
-
-            
-            Results : https://docs.google.com/spreadsheets/d/1pRua3ZrFHAa0u6qOhXbzBvRMAdHmmyIuzaFKQjpzF9o/edit?fbclid=IwAR3zwKJl_7w8C8UfZgmPvgDD-VypJj7P_0AxoCAlBd50Kt6i_v-c87YTkh8#gid=0
-            
-                  </i></p>
-          </div>
-         </div>
- 
-  </div>
-
-  </div>
-
-    </body>
-  </html>
+<p><span style="font-weight: 400;">INFORMATION RETRIEVAL AND EXTRACTION</span></p>
+<p><strong>MEDICAL TEXT SIMPLIFICATION</strong></p>
+<p><span style="font-weight: 400;">TECHNICAL REPORT</span><span style="font-weight: 400;"><br /></span><strong>Instructor</strong><span style="font-weight: 400;"> : Dr.Vasudev Varma</span> <strong>TA</strong><span style="font-weight: 400;"> : Nikhil Pattisapu</span></p>
+<p><strong>Team-17</strong></p>
+<p><span style="font-weight: 400;"> M.Sravan(201531197) </span></p>
+<p><span style="font-weight: 400;">Gaurav Mahajan(20172045)</span></p>
+<p><span style="font-weight: 400;"> Ekansh purohit(201564070)</span></p>
+<h1><strong>Introduction</strong></h1>
+<p><span style="font-weight: 400;">Text Simplification is an important task in natural language processing </span><span style="font-weight: 400;">to modify, enhance, process an existing corpus into human-readable format. Numerous methods exist that simplify a given sentence without altering the context and also work efficiently . </span><span style="font-weight: 400;"><br /></span><span style="font-weight: 400;">In this project we provide various methods for identifying Medical Terms in sentences and converting them into a simpler ones</span> <span style="font-weight: 400;">of similar meaning so as to simplify the statement and improve readability for the end user.</span></p>
+<p><span style="font-weight: 400;">This task tries to solve an extremely practical problem that almost everyone faces in daily life. Whenever a person reads a medical prescription, a medical report or any article on any drug or disease, he/she is usually perplexed by the complexity and frequency of medical jargons used and gains very little from it. &nbsp;</span></p>
+<h2><strong>Data</strong></h2>
+<p><span style="font-weight: 400;">The Data used was from the wikipedia corpus containing 168000 sentences having both Medical(88000) and Non-Medical Sentences(80000). Our approaches are mostly based on Medical Sentences.</span></p>
+<p>&nbsp;</p>
+<h2><strong>Approach</strong></h2>
+<p><span style="font-weight: 400;">There are broadly 2 methods that we have used in this Project.</span></p>
+<ol>
+<li style="font-weight: 400;"><span style="font-weight: 400;">Without Machine Learning</span></li>
+<li style="font-weight: 400;"><span style="font-weight: 400;">Using Machine Learning </span></li>
+</ol>
+<p><br /><br /></p>
+<h3><strong>Without Machine Learning</strong></h3>
+<ol>
+<li style="font-weight: 400;"><span style="font-weight: 400;">Identification of Medical Terms in given sentence.</span></li>
+<li style="font-weight: 400;"><span style="font-weight: 400;">Finding various synonyms for the medical terms and ranking them according to their scores</span></li>
+<li style="font-weight: 400;"><span style="font-weight: 400;">Replacing these words in the given sentences such that the meaning of the modified sentence remains the same vis-&agrave;-vis the original one</span></li>
+</ol>
+<h2><strong>Identifying Medical Terms</strong></h2>
+<p><strong>1.MetaMap</strong><strong><br /></strong><span style="font-weight: 400;">MetaMap is a tool &nbsp;for Identifying terms related to medical field. Given any sentence, it tries to find predefined set of concepts in it. </span></p>
+<p><span style="font-weight: 400;">Metamap Observations</span><span style="font-weight: 400;"><br /></span><span style="font-weight: 400;">First we requested license for metamap and followed installation as per https://metamap.nlm.nih.gov/Installation.shtml </span></p>
+<p><span style="font-weight: 400;">Then we used python wrapper &lsquo;pymetamap&rsquo; to identify medical concepts in sentences. </span></p>
+<p><span style="font-weight: 400;">We ran metamap on simple sentences like 'I had heart attack / I had kidney infection ' where it correctly identified various concepts in sentences.</span></p>
+<p><span style="font-weight: 400;">We then focussed on concept 'dsyn' representing disease / disorder. To have quantitative measure, we took random 40 statements as input and tested metamap output for &lsquo;dsyn&rsquo; concept identification. Number of false positives was near to 6-8 from 40. We manually filtered those false positives.</span></p>
+<p><span style="font-weight: 400;">We then used &lsquo;Wordnet&rsquo; to get synonyms of the concepts and ranked them using their frequency in english language.</span></p>
+<p><span style="font-weight: 400;">E.g.</span></p>
+<p><span style="font-weight: 400;">Sentence : There was a smallpox epidemic in 1839 that killed a large part of the population of the area .</span></p>
+<p><span style="font-weight: 400;">disease : "smallpox"</span></p>
+<p><span style="font-weight: 400;">==synonyms==</span></p>
+<p><span style="font-weight: 400;">variola = 1.85 ( value denotes their use in English language )</span></p>
+<p><span style="font-weight: 400;">smallpox = 3.32</span></p>
+<p><span style="font-weight: 400;">variola_major = 0.0</span></p>
+<p><span style="font-weight: 400;">Sentence ; A measles epidemic and food shortages during 1900 reduced the population of the area by one-third .</span></p>
+<p><span style="font-weight: 400;">disease : "measles"</span></p>
+<p><span style="font-weight: 400;">==synonyms==</span></p>
+<p><span style="font-weight: 400;">measles = 3.4</span></p>
+<p><span style="font-weight: 400;">morbilli = 0.0</span></p>
+<p><span style="font-weight: 400;">rubeola = 0.0</span></p>
+<p><span style="font-weight: 400;">It correctly helped us to transform &lsquo;cardiac attack&rsquo; to &lsquo;heart attack&rsquo;, &lsquo;myocardial infarction&rsquo; to &lsquo;heart attack&rsquo; etc.</span></p>
+<p><br /><br /></p>
+<p><strong>2.CliNER</strong><strong><br /></strong><span style="font-weight: 400;">Cliner was a similar tool to identify medical terms in any given sentence.</span><span style="font-weight: 400;"><br /></span><span style="font-weight: 400;">CliNER Observations</span></p>
+<p><span style="font-weight: 400;">Cliner provides out of the box trained model to identify medical terms. It categorizes word into one of the three categories : problem, treatment, test. We tested it on random set of sentences on which many results were false positives. To have quantitative statistics, we gave 40 random input statements for which CliNER gave 25-30 false positives. It missed true medical terms like &lsquo;measles&rsquo;. So we decided not to test synonym replacement with CliNER as performance was poor in first stage of separating medical terms itself.</span></p>
+<p><span style="font-weight: 400;">False Positive Examples :</span></p>
+<p><span style="font-weight: 400;">"chenab" 32:0 32:0||t="test"</span></p>
+<p><span style="font-weight: 400;">"chenab" 34:0 34:0||t="treatment"</span></p>
+<p><span style="font-weight: 400;">"pakistan" 29:10 29:10||t="treatment"</span></p>
+<p><span style="font-weight: 400;">"india" 30:37 30:37||t="problem"</span></p>
+<p><strong>3.QuickUMLS</strong></p>
+<p><span style="font-weight: 400;">QuickUMLS (Soldaini and Goharian, 2016) is a tool for fast, unsupervised biomedical concept extraction from medical text. It takes advantage of Simstring (Okazaki and Tsujii, 2010) for approximate string matching.</span></p>
+<p><span style="font-weight: 400;">This method required the use of a valid UMLS installation on disk along with the use of The UMLS Terminology Services (UTS) which provides an API to search the UMLS corpus .</span></p>
+<p><span style="font-weight: 400;">Before using QuickUMLS, we ran UMLS installation using MetamorphoSys tool which allowed us to install multiple UMLS Knowledge Sources on a remote machine which later helps on to improve the accuracy of medical term detection.</span></p>
+<p><span style="font-weight: 400;">During installation, we customize the Metathesaurus subsets which consists of a large number of files, some of which are very large vocabularies. Semantic relations and concepts(or meanings) are also defined between various medical identities. Each concept or meaning in the Metathesaurus has a unique and permanent concept identifier (CUI). The CUI has no intrinsic meaning but can be used to search for medical entities having similar meaning or belonging to the same subsets.</span></p>
+<p><span style="font-weight: 400;">The default preferred name for any Metathesaurus concept is based on an order of precedence of all the types of English strings in all the Metathesaurus source vocabularies.</span></p>
+<p><span style="font-weight: 400;">The factors considered in establishing the default order of precedence include breadth of subject coverage, frequency of update, and the degree to which the source's concept names are used in regular clinical or biomedical discourse</span><span style="font-weight: 400;"><br /></span><span style="font-weight: 400;">For identification of medical entities in this method, a QuickUMLS object is instantiated as follows:</span></p>
+<table>
+<tbody>
+<tr>
+<td>
+<p><span style="font-weight: 400;">matcher = QuickUMLS(quickumls_fp, overlapping_criteria, threshold,similarity_name, window, accepted_semtypes)</span></p>
+</td>
+</tr>
+</tbody>
+</table>
+<p>&nbsp;</p>
+<ul>
+<li style="font-weight: 400;"><em><span style="font-weight: 400;">quickumls_fp </span></em><span style="font-weight: 400;">is the directory where the QuickUMLS data files are installed.</span></li>
+<li style="font-weight: 400;"><em><span style="font-weight: 400;">similarity_name </span></em><span style="font-weight: 400;">(optional, default: "jaccard") is the name of similarity to use. Choose between "dice", "jaccard", "cosine", or "overlap"</span></li>
+<li style="font-weight: 400;"><em><span style="font-weight: 400;">overlapping_criteria </span></em><span style="font-weight: 400;">(optional, default: "score") is the criteria used to deal with </span> <span style="font-weight: 400;">overlapping concepts; choose "score" if the matching score of the concepts should be consider first, "length" if the longest should be considered first instead.</span></li>
+<li style="font-weight: 400;"><em><span style="font-weight: 400;">threshold </span></em><span style="font-weight: 400;">(optional, default: 0.7) is the minimum similarity value between strings.</span></li>
+<li style="font-weight: 400;"><em><span style="font-weight: 400;">window</span></em><span style="font-weight: 400;"> (optional, default: 5) is the maximum number of tokens to consider for matching.</span></li>
+</ul>
+<p><span style="font-weight: 400;">This class and helper python files were imported into our main driver program folder to use QuickUMLS along with UMLS database. To use the matcher, simply call:</span></p>
+<table>
+<tbody>
+<tr>
+<td>
+<p><span style="font-weight: 400;">text = </span><span style="font-weight: 400;">"The ulna has dislocated posteriorly from the trochlea of the humerus."</span><span style="font-weight: 400;"><br /></span><span style="font-weight: 400;">matcher.match(text, best_match=</span><span style="font-weight: 400;">True</span><span style="font-weight: 400;">, ignore_syntax=</span><span style="font-weight: 400;">False</span><span style="font-weight: 400;">)</span></p>
+</td>
+</tr>
+</tbody>
+</table>
+<p><span style="font-weight: 400;">Set </span><em><span style="font-weight: 400;">best_match</span></em><span style="font-weight: 400;"> to False if you want to return overlapping candidates,</span><em><span style="font-weight: 400;"> ignore_syntax</span></em><span style="font-weight: 400;"> to True to disable all heuristics introduced in (Soldaini and Goharian, 2016). This would return a set of all the medical entities (whether ngram or single word) along with their CUI, preference, similarity_score etc. which would later be used to extract synonyms using UMLS lexicon database.</span><span style="font-weight: 400;"><br /></span><span style="font-weight: 400;"><br /></span><span style="font-weight: 400;">This process was done for various values of all different parameters to find optimal values for </span><em><span style="font-weight: 400;">threshold, window</span></em><span style="font-weight: 400;"> and </span><em><span style="font-weight: 400;">similarity_name</span></em><span style="font-weight: 400;">. Once they were achieved, it was kept same for all sentences and lexical databases.</span></p>
+<h2><strong>Synonym Replacement</strong></h2>
+<p><strong>1.WordNet</strong></p>
+<p><span style="font-weight: 400;">WordNet is a large lexical database of English. Nouns, verbs, adjectives and adverbs are</span><span style="font-weight: 400;"><br /></span><span style="font-weight: 400;">grouped into sets of cognitive synonyms (synsets), each expressing a distinct concept. </span><span style="font-weight: 400;"><br /></span><span style="font-weight: 400;">Given a word that is identified from the above three methods, We use synonyms from Wordnet to replace it.</span></p>
+<p><strong>2.MeSH</strong></p>
+<p><span style="font-weight: 400;">Medical Subject Headings (MeSH) is a comprehensive controlled vocabulary for the purpose of indexing journal articles and books in the life sciences; it serves as a thesaurus that facilitates searching. It is created and updated by the United States National Library of Medicine (NLM), it is used by the MEDLINE/PubMed article database and by NLM's catalog of book holdings. MeSH is also used by ClinicalTrials.gov registry to classify which diseases are studied by trials registered in ClinicalTrials.gov.</span></p>
+<p><span style="font-weight: 400;">MeSH contains a total of 25,186 </span><em><span style="font-weight: 400;">subject headings</span></em><span style="font-weight: 400;">, also known as </span><em><span style="font-weight: 400;">descriptors</span></em><span style="font-weight: 400;">.</span><a href="https://en.wikipedia.org/wiki/Medical_Subject_Headings#cite_note-factsheet-2"><span style="font-weight: 400;">[2]</span></a><span style="font-weight: 400;"> Most of these are accompanied by a short description or definition, links to related descriptors, and a list of synonyms or very similar terms (known as </span><em><span style="font-weight: 400;">entry terms</span></em><span style="font-weight: 400;">). This additional information and the hierarchical structure make the MeSH essentially a thesaurus, rather than a plain subject headings list. </span></p>
+<p><span style="font-weight: 400;">We downloaded the MeSH data (2018 version) in ASCII format available online using a valid NLM registration and license. The total size of the MeSH data was about 95 MB which in addition to the descriptors, MeSH also contains some 139,000 supplementary concept records. We then created a tool/class which would do the following to make searching for a medical concept much easier:</span></p>
+<ul>
+<li style="font-weight: 400;"><span style="font-weight: 400;">read in the MeSH ASCII file and stored the mesh term/entry/print entry in a trie pointing to a list of mesh numbers.</span></li>
+<li style="font-weight: 400;"><span style="font-weight: 400;">build a dictionary where mesh number pointing to a mesh term.</span></li>
+<li style="font-weight: 400;"><span style="font-weight: 400;">save the mesh trie and mesh dictionary to pickle files for later use in the MeSHTrie class.</span></li>
+<li style="font-weight: 400;"><span style="font-weight: 400;">take an input string to extract mesh numbers using the mesh trie.</span></li>
+<li style="font-weight: 400;"><span style="font-weight: 400;">truncate mesh number to its upper level category.</span></li>
+<li style="font-weight: 400;"><span style="font-weight: 400;">convert mesh number to mesh term using the mesh dictionary and then MeSHTrie can be used to extract medical keywords and group medical keywords.</span></li>
+</ul>
+<p>&nbsp;</p>
+<p><strong>3.UMLS</strong></p>
+<p><span style="font-weight: 400;">The UMLS, or Unified Medical Language System, is a set of files and software that brings together many health and biomedical vocabularies and standards to enable interoperability between computer systems. &nbsp;It has 3 knowledge sources:</span></p>
+<ul>
+<li style="font-weight: 400;"><span style="font-weight: 400;">Metathesaurus</span><span style="font-weight: 400;"> - Terms and codes from many vocabularies, including CPT&reg;, ICD-10-CM, LOINC&reg;, MeSH&reg;, RxNorm, and SNOMED CT&reg;</span></li>
+<li style="font-weight: 400;"><span style="font-weight: 400;">Semantic Network</span><span style="font-weight: 400;"> - Broad categories (semantic types) and their relationships (semantic relations)</span></li>
+<li style="font-weight: 400;"><span style="font-weight: 400;">SPECIALIST Lexicon and Lexical Tools</span><span style="font-weight: 400;">: Natural language processing tools</span></li>
+</ul>
+<p><span style="font-weight: 400;">Semantic Network and Lexical Tools are used to produce the Metathesaurus.</span></p>
+<p><span style="font-weight: 400;">We used The UMLS Terminology Services (UTS) which provides an API to search the UMLS corpus . There were four major steps involved to access and get any result from this API:</span></p>
+<ol>
+<li style="font-weight: 400;"><span style="font-weight: 400;">User Authentication - Determine whether you want to use your UMLS username and password OR your UMLS API key.</span></li>
+<li style="font-weight: 400;"><span style="font-weight: 400;">Get a Ticket-Granting Ticket (TGT). The TGT is valid for 8 hours.</span></li>
+<li style="font-weight: 400;"><span style="font-weight: 400;"> Get a Service Ticket which expires after one use or five minutes from the time of generation, whichever comes first. Each REST API call requires a new Service Ticket.</span></li>
+<li style="font-weight: 400;"><span style="font-weight: 400;">Using service tickets as the value for the &lsquo;ticket&rsquo; query parameter in GET calls to https://uts-ws.nlm.nih.gov/rest, such as this call to retrieve information about CUI:C0018787:</span></li>
+</ol>
+<table>
+<tbody>
+<tr>
+<td>
+<p><span style="font-weight: 400;">https://uts-ws.nlm.nih.gov/rest/content/current/CUI/C0018787?ticket=ST</span><span style="font-weight: 400;">-134</span><span style="font-weight: 400;">-HUbXGfI765aSj0UqtdvU-cas</span></p>
+</td>
+</tr>
+</tbody>
+</table>
+<p><span style="font-weight: 400;">The base URI for any REST API call made was: &nbsp;</span><strong>https://uts-ws.nlm.nih.gov/rest. </strong><span style="font-weight: 400;">Either the CUI for a term or the query term itself was used to find all the synonyms of a term and replace it with a suitable one using one of the ranking methods.</span></p>
+<p><span style="font-weight: 400;">An example of the use of the API is given as follows:</span></p>
+<table>
+<tbody>
+<tr>
+<td>
+<p><span style="font-weight: 400;">APIKEY = </span><span style="font-weight: 400;">"791abdc8-60c6-436b-8152-717de6a30e7d"</span><span style="font-weight: 400;"><br /></span><span style="font-weight: 400;"><br /></span><span style="font-weight: 400;">TGT_URL = </span><span style="font-weight: 400;">"https://utslogin.nlm.nih.gov/cas/v1/api-key"</span><span style="font-weight: 400;"><br /></span><span style="font-weight: 400;">TGT_params = {</span><span style="font-weight: 400;">'apikey'</span><span style="font-weight: 400;">:APIKEY}</span><span style="font-weight: 400;"><br /></span><span style="font-weight: 400;">TGT_headers = {</span><span style="font-weight: 400;">'Content-Type'</span><span style="font-weight: 400;">:</span><span style="font-weight: 400;">'application/x-www-form-urlencoded'</span><span style="font-weight: 400;">}</span><span style="font-weight: 400;"><br /></span><span style="font-weight: 400;">baseURL = </span><span style="font-weight: 400;">"https://uts-ws.nlm.nih.gov/rest/search/current/"</span><span style="font-weight: 400;"><br /></span><span style="font-weight: 400;">TGT_response = requests.post(url = TGT_URL, headers = TGT_headers, params = TGT_params)</span></p>
+<p><span style="font-weight: 400;">ST_URL = TGT</span><span style="font-weight: 400;"><br /></span><span style="font-weight: 400;">ST_params = {</span><span style="font-weight: 400;">'service'</span><span style="font-weight: 400;">:</span><span style="font-weight: 400;">"http://umlsks.nlm.nih.gov"</span><span style="font-weight: 400;">}</span><span style="font-weight: 400;"><br /></span><span style="font-weight: 400;">ST_headers = {</span><span style="font-weight: 400;">'Content-Type'</span><span style="font-weight: 400;">:</span><span style="font-weight: 400;">'application/x-www-form-urlencoded'</span><span style="font-weight: 400;">}</span><span style="font-weight: 400;"><br /></span><span style="font-weight: 400;">ST_response = requests.post(url = ST_URL, headers = ST_headers, params = ST_params)</span></p>
+<p><span style="font-weight: 400;">url = baseURL</span></p>
+<p><span style="font-weight: 400;">search_term = &ldquo;</span><span style="font-weight: 400;">trochlea of the humerus.</span><span style="font-weight: 400;">&rdquo;</span></p>
+<p><span style="font-weight: 400;">params = {'string':search_term, 'ticket':ST_response.text}</span></p>
+<p><span style="font-weight: 400;">results = requests.get(url = url, params = params)</span></p>
+</td>
+</tr>
+</tbody>
+</table>
+<p><br /><br /><br /></p>
+<h2><strong>Ranking Methods</strong></h2>
+<p><span style="font-weight: 400;">The main task after identifying the medical terms is to replace them with appropriate synonym so that the overall context does not change and is simpler to understand.</span><span style="font-weight: 400;"><br /></span><span style="font-weight: 400;">We use 2 methods for ranking the synonyms.</span></p>
+<ol>
+<li style="font-weight: 400;"><span style="font-weight: 400;">Splitter</span></li>
+<li style="font-weight: 400;"><span style="font-weight: 400;">frequency</span></li>
+</ol>
+<p><strong>Splitter</strong></p>
+<p><span style="font-weight: 400;">Given a synonym, we split the word with the synonym having highest number of splits, meaning it is more expressive and explanatory. &nbsp;Tool used was pysplitter. </span><span style="font-weight: 400;"><br /></span><span style="font-weight: 400;">The replacement thus is made with the word that has the highest number of splits in it.</span></p>
+<ul>
+<li style="font-weight: 400;"><span style="font-weight: 400;">Myocarditis</span></li>
+<li style="font-weight: 400;"><span style="font-weight: 400;">Heart attack</span></li>
+</ul>
+<p><span style="font-weight: 400;"><br /></span><strong>Frequency</strong></p>
+<p><span style="font-weight: 400;">We used the 'wordfreq' library to identify the frequency of word in English language. More the frequent word, more appropriate it is &nbsp;to replace as simplified word.</span></p>
+<ul>
+<li style="font-weight: 400;"><span style="font-weight: 400;">cardiac arrest.</span></li>
+<li style="font-weight: 400;"><span style="font-weight: 400;">Heart attack</span></li>
+</ul>
+<p>&nbsp;</p>
+<h3><strong>2.Using Machine Learning</strong></h3>
+<p><span style="font-weight: 400;">The paper</span><span style="font-weight: 400;">(</span><span style="font-weight: 400;">Exploring Neural Text Simplification Models</span><span style="font-weight: 400;">) referred to in this project used a variation of the standard attention model to simplify the sentences. The author had used a global attention model with input feed for simplification of sentences. In the architecture, there are 2 LSTMs, one encoder and other is a decoder(hidden states of size 500 and 500 hidden units), with the attention for all the hidden layers of the decoder.</span></p>
+<p><span style="font-weight: 400;">We have Used the OpenNMT toolkit for all the training and prediction process.</span></p>
+<p><span style="font-weight: 400;">There are 3 Methods using these Long-short-term-memory cells(LSTMS) that we have tested in the project.</span></p>
+<ol>
+<li style="font-weight: 400;"><span style="font-weight: 400;">Model given in the the reference paper</span></li>
+<li style="font-weight: 400;"><span style="font-weight: 400;">Input feeding attention on decoder </span></li>
+<li style="font-weight: 400;"><span style="font-weight: 400;">Simple Model With attention(seq-seq)</span></li>
+</ol>
+<p><strong>Classifying Data into Medical and Non-Medical using CTakes for feeding the model with only Medical sentences.</strong></p>
+<p><span style="font-weight: 400;">We have Used Ctakes, a tool for identifying Medical terms in any sentence. CTakes works pretty well even on complex sentences having words like:</span></p>
+<p><span style="font-weight: 400;">Acinetobacter Infection,Acanthamoeba Infection,Adenovirus Vaccination etc.</span><span style="font-weight: 400;"><br /></span><span style="font-weight: 400;">The tool recognizes the sentences and labels them as UMLSConcepts in an XML file. </span></p>
+<p><span style="font-weight: 400;">Hence, If the sentence contains a medical text we have separated them using CTakes as our primary classification. Other Methods described above fail sometimes showing false positives. But Ctakes doesnot miss sentences having Medical terms. </span><span style="font-weight: 400;"><br /></span><strong><br /><br /></strong></p>
+<p><br /><br /></p>
+<p><strong>1.Model given in reference paper</strong><strong><br /></strong><span style="font-weight: 400;">The Model was trained on the whole dataset irrespective of the Medical presence. The predictions were done using the given pretrained values.</span><span style="font-weight: 400;"><br /></span><span style="font-weight: 400;">Our main aim was to test the network on Medical sentences:</span><span style="font-weight: 400;"><br /></span><strong>Input Data</strong><span style="font-weight: 400;">: 88000 Medical text sentences.</span><span style="font-weight: 400;"><br /></span><strong>Predictions</strong><span style="font-weight: 400;">: On medical data with validation split(20000/88000), 3 hrs with 2 GPUs(1080Ti) and 10 cores.</span></p>
+<p><span style="font-weight: 400;">As mentioned above, the model uses global input feeding attention in the decoder part of the network. &nbsp;For the attention layer, in the paper, a context vector </span><span style="font-weight: 400;">c</span><span style="font-weight: 400;">t</span><span style="font-weight: 400;"> is generated by using the information provided from the hidden states of the source sentence and by computing a weighted average with the alignment weights </span><span style="font-weight: 400;">a</span><span style="font-weight: 400;">t</span><span style="font-weight: 400;"> . The new hidden state is obtained using a concatenation of the previous hidden state and the context vector:</span><span style="font-weight: 400;"><br /></span></p>
+<p><span style="font-weight: 400;">The global alignment weights at are being computed with a softmax function over the general scoring method for attention</span></p>
+<p><span style="font-weight: 400;">The output is again given to the decoder in the next time step. </span></p>
+<p><span style="font-weight: 400;">At the end of each epoch it saves the state of the model and predicts the perplexity values of the models on the set. The training employs early-stopping and selects the model resulted from the epoch with the best perplexity to avoid over-fitting. We have tested these values and the results and their scores are given below in the final table.</span></p>
+<p><strong>2.Simple Model with attention</strong><span style="font-weight: 400;"><br /></span><span style="font-weight: 400;">Input feeding attention on decoder. </span><span style="font-weight: 400;"><br /></span><span style="font-weight: 400;">The model is given in the OpenNMT library. The model uses attention mechanism similar to the description above on the encoder output and the current time step decoder output.</span></p>
+<p><span style="font-weight: 400;"> At each time step, the decoder is given input from previous output(generated by model) and the hidden states of some length from encoder. The length of capturing the previous states can be varied.</span><span style="font-weight: 400;"><br /></span><span style="font-weight: 400;">All these values are concatenated and passed through a neural network(dense) to get the values of a</span><span style="font-weight: 400;">t</span><span style="font-weight: 400;">. &nbsp;&nbsp;Applying softmax produces context vector C</span><span style="font-weight: 400;">t</span><span style="font-weight: 400;">. C</span><span style="font-weight: 400;">t</span><span style="font-weight: 400;"> is same length as input vector. Concatenation of C</span><span style="font-weight: 400;">t</span><span style="font-weight: 400;"> and h</span><span style="font-weight: 400;">t</span><span style="font-weight: 400;">(from decoder output) is given to another dense layer and final h</span><span style="font-weight: 400;">t </span><span style="font-weight: 400;">is calculated.</span> <span style="font-weight: 400;">&nbsp;&nbsp;&nbsp;</span></p>
+<p><span style="font-weight: 400;">This is known as the input feed approach. The architecture is same as the 1st model above.</span><span style="font-weight: 400;"><br /></span><span style="font-weight: 400;">But this is trained on Medical data alone and also tested on medical data itself. </span><span style="font-weight: 400;"><br /><br /></span></p>
+<p>&nbsp;</p>
+<p><strong>Input Data &amp; Training</strong><span style="font-weight: 400;">: On 68000 sentences with 3 GPUs(1080 Ti) and 10 Cores for 1.5hrs.</span><span style="font-weight: 400;"><br /></span><strong>Predictions</strong><span style="font-weight: 400;">:With a validation split of 0.2(20000/88000).</span></p>
+<p><span style="font-weight: 400;">The Scores and metrics are given in the Table below.</span></p>
+<p><strong>3.Simple Encoder Decoder Model</strong></p>
+<p><span style="font-weight: 400;">In this approach, we have used Open-NMT&rsquo;s simple model without attention and with same input data as before.</span></p>
+<p><span style="font-weight: 400;">This model is simple and similar to the previous one except that the output of states is not given to the next hidden layer. </span><span style="font-weight: 400;"><br /></span><span style="font-weight: 400;">The hidden state output in previous time step is given to the next state of the decoder.</span><span style="font-weight: 400;"><br /></span><span style="font-weight: 400;">Hence, the predictions are for every k(variable) length input sequence. </span><span style="font-weight: 400;"><br /></span><strong>Input Data &amp; Training</strong><span style="font-weight: 400;">: On 68000 sentences with 3 GPUs(1080 Ti) and 10 Cores for 1.5hrs.</span><span style="font-weight: 400;"><br /></span><strong>Predictions</strong><span style="font-weight: 400;">:With a validation split of 0.2(20000/88000).</span></p>
+<p><span style="font-weight: 400;">Scores and the metrics are given below.</span></p>
+<h2><strong>Metrics</strong></h2>
+<p><span style="font-weight: 400;">After word is replaced with synonym, we need to check how simplified resulting sentence is with respect to original sentence. We used following metrics for the same.</span></p>
+<p><span style="font-weight: 400;">We have used 4 types of metrics:</span></p>
+<ol>
+<li style="font-weight: 400;"><span style="font-weight: 400;">BLEU Score</span></li>
+<li style="font-weight: 400;"><span style="font-weight: 400;">Rouge-L Score</span></li>
+<li style="font-weight: 400;"><span style="font-weight: 400;">Skip Thought Sim Score</span></li>
+<li style="font-weight: 400;"><span style="font-weight: 400;">Flesch Readability Score</span></li>
+</ol>
+<p><strong>BLEU Score</strong></p>
+<p><strong>BLEU</strong><span style="font-weight: 400;"> (</span><strong>bilingual evaluation understudy</strong><span style="font-weight: 400;">) </span><span style="font-weight: 400;">is an algorithm for evaluating the quality of text which has been </span><a href="https://en.wikipedia.org/wiki/Machine_translation"><span style="font-weight: 400;">machine-translated</span></a><span style="font-weight: 400;"> from one </span><a href="https://en.wikipedia.org/wiki/Natural_language"><span style="font-weight: 400;">natural language</span></a><span style="font-weight: 400;"> to another.</span></p>
+<p><span style="font-weight: 400;">BLEU&rsquo;s output is always a number between 0 and 1. This value indicates how similar the candidate text is to the reference texts, with values closer to 1 representing more similar texts.</span></p>
+<p><strong>Rouge-L Score</strong></p>
+<p><span style="font-weight: 400;">The Rouge-L metric is a metric that gives the maximum matching between two sentences. L represents the longest matching subsequence. If it is 1,the matching unigrams are used for scoring, for 2 it is bigram and so on.</span><span style="font-weight: 400;"><br /></span><span style="font-weight: 400;">The score gives three values, precision,recall and f1 scores for every 2 sentences given as an input.</span></p>
+<p><br /><br /></p>
+<p><strong>Skip Thought Sim Score</strong></p>
+<p><span style="font-weight: 400;">The Skip Thought sim is a fixed length representation of a given sentence. It produces a constant length vector as output, given any sized input. The original paper contains 2 decoders which take the input of the Encoder and generate the previous and the successive sentences which have similar meaning to the original paragraph.</span><span style="font-weight: 400;"><br /></span><span style="font-weight: 400;">Eg:</span></p>
+<p><span style="font-weight: 400;">Given 3 sentences,</span></p>
+<p><span style="font-weight: 400;"><br /></span><span style="font-weight: 400;"> The Z(i) is the encoded vector. Encoders and decoders are generally LSTMs or GRUs.</span><span style="font-weight: 400;"><br /></span><span style="font-weight: 400;">Given the sentence at x(t), it predicts the sentences x(t-1) &amp; x(t+1).</span><span style="font-weight: 400;"><br /></span><span style="font-weight: 400;">In our metrics, we use only the Z(i) encoding between the predicted sentences and ground truths. If the 2 vectors are A1,A2, we find the cosine similarity between the 2 vectors. Higher the value, simpler the sentence.</span></p>
+<p><strong>Flesch Readability Score</strong></p>
+<p><span style="font-weight: 400;">This score evaluates readability of resulting sentence with respect to original sentence. Given a sentence it returns the ease of understanding it. A higher score would mean simpler sentence, and a lower score would mean it is a difficult one.</span></p>
+<p><span style="font-weight: 400;">| Score | Difficulty |</span></p>
+<p><span style="font-weight: 400;">|-------|-------------------|</span></p>
+<p><span style="font-weight: 400;">|90-100 | Very Easy |</span></p>
+<p><span style="font-weight: 400;">| 80-89 | Easy |</span></p>
+<p><span style="font-weight: 400;">| 70-79 | Fairly Easy |</span></p>
+<p><span style="font-weight: 400;">| 60-69 | Standard |</span></p>
+<p><span style="font-weight: 400;">| 50-59 | Fairly Difficult |</span></p>
+<p><span style="font-weight: 400;">| 30-49 | Difficult |</span></p>
+<p><span style="font-weight: 400;">| 0-29 | Very Confusing |</span></p>
+<h2><strong>Observations</strong></h2>
+<p><span style="font-weight: 400;">All the scores can be found in </span><a href="https://docs.google.com/spreadsheets/d/1pRua3ZrFHAa0u6qOhXbzBvRMAdHmmyIuzaFKQjpzF9o/edit?usp=sharing"><span style="font-weight: 400;">this sheet</span></a></p>
+<p><strong>Medical entity identification and synonym replacement</strong></p>
+<p>&nbsp;</p>
+<ul>
+<li><strong><strong>MetaMap</strong></strong></li>
+</ul>
+<p>&nbsp;</p>
+<ol>
+<ol>
+<li style="font-weight: 400;"><span style="font-weight: 400;">Used with 3 different word lexicons for extracting synonyms. (WordNet, MeSH and UMLS) on the dataset given initially.</span></li>
+<li style="font-weight: 400;"><span style="font-weight: 400;">For all the three, both frequency and number of synonyms were used separately or in combination(for UMLS and MeSh lexicon).</span></li>
+<li style="font-weight: 400;"><span style="font-weight: 400;">Since MeSH uses a hierarchical system to store the descriptors or subject headings and a MeSHTrie was used for indexing and searching the same, a higher score can be observed when compared to WordNet and UMLS lexicons across all metrics(BLEU, ROUGE_L, SkipThoughtSim and Flesch Kincaid Score).</span><span style="font-weight: 400;"><br /><br /></span></li>
+</ol>
+</ol>
+<table>
+<tbody>
+<tr>
+<td>
+<p><strong>Lexicon used</strong></p>
+</td>
+<td>
+<p><strong>BLEU Score</strong></p>
+</td>
+<td>
+<p><strong>ROUGE_L(P)</strong></p>
+</td>
+<td>
+<p><strong>ROUGE_L(R)</strong></p>
+</td>
+<td>
+<p><strong>ROUGE_L(F1)</strong></p>
+</td>
+<td>
+<p><strong>SkipThoughtSim Score</strong></p>
+</td>
+<td>
+<p><strong>Flesch Kincaid Score</strong><strong><br /></strong><strong>(prediction - ground_truth)</strong></p>
+</td>
+</tr>
+<tr>
+<td>
+<p><span style="font-weight: 400;">WordNet</span><span style="font-weight: 400;"><br /></span><span style="font-weight: 400;">(Using splitter)</span></p>
+</td>
+<td>
+<p><span style="font-weight: 400;"><br /></span><span style="font-weight: 400;">0.1458328</span></p>
+</td>
+<td>
+<p><span style="font-weight: 400;"><br /></span><span style="font-weight: 400;">0.39169</span></p>
+</td>
+<td>
+<p><span style="font-weight: 400;"><br /></span><span style="font-weight: 400;">0.452702</span></p>
+</td>
+<td>
+<p><span style="font-weight: 400;"><br /></span><span style="font-weight: 400;">0.419997</span></p>
+</td>
+<td>
+<p><span style="font-weight: 400;"><br /></span><span style="font-weight: 400;">0.80958796</span></p>
+</td>
+<td>
+<p><span style="font-weight: 400;"><br /></span><span style="font-weight: 400;">35.2268-39.626</span></p>
+</td>
+</tr>
+<tr>
+<td>
+<p><span style="font-weight: 400;">WordNet</span><span style="font-weight: 400;"><br /></span><span style="font-weight: 400;">(Using frequency)</span></p>
+</td>
+<td>
+<p><span style="font-weight: 400;"><br /></span><span style="font-weight: 400;">0.473741</span></p>
+</td>
+<td>
+<p><span style="font-weight: 400;"><br /></span><span style="font-weight: 400;">0.33344</span></p>
+</td>
+<td>
+<p><span style="font-weight: 400;"><br /></span><span style="font-weight: 400;">0.390550</span></p>
+</td>
+<td>
+<p><span style="font-weight: 400;"><br /></span><span style="font-weight: 400;">0.359743</span></p>
+</td>
+<td>
+<p><span style="font-weight: 400;"><br /></span><span style="font-weight: 400;">0.7646596</span></p>
+</td>
+<td>
+<p><span style="font-weight: 400;"><br /></span><span style="font-weight: 400;">117.6728571428 - 121.9782857142</span></p>
+</td>
+</tr>
+<tr>
+<td>
+<p><span style="font-weight: 400;">UMLS</span></p>
+</td>
+<td>
+<p><span style="font-weight: 400;">0.3493007</span></p>
+</td>
+<td>
+<p><span style="font-weight: 400;">0.48200</span></p>
+</td>
+<td>
+<p><span style="font-weight: 400;">0.650158</span></p>
+</td>
+<td>
+<p><span style="font-weight: 400;">0.553596</span></p>
+</td>
+<td>
+<p><span style="font-weight: 400;">0.8342941</span></p>
+</td>
+<td>
+<p><span style="font-weight: 400;">27.8058646617 - 54.8996992481</span></p>
+</td>
+</tr>
+<tr>
+<td>
+<p><span style="font-weight: 400;">MeSH</span></p>
+</td>
+<td>
+<p><span style="font-weight: 400;">0.39988092</span></p>
+</td>
+<td>
+<p><span style="font-weight: 400;">0.549307</span></p>
+</td>
+<td>
+<p><span style="font-weight: 400;">0.6455285</span></p>
+</td>
+<td>
+<p><span style="font-weight: 400;">0.5605510</span></p>
+</td>
+<td>
+<p><span style="font-weight: 400;">0.85604495</span></p>
+</td>
+<td>
+<p><span style="font-weight: 400;">35.2598496241 - 54.8996992481</span></p>
+</td>
+</tr>
+</tbody>
+</table>
+<p>&nbsp;</p>
+<ol>
+<ol>
+<ol>
+<li style="font-weight: 400;"><span style="font-weight: 400;">We can also see that MetaMap is much more robust and performs much better than QuickUMLS across (almost) all metrics and lexicons. This can be attributed to the history and the time spent in development of MetaMap(over a decade).</span><span style="font-weight: 400;"><br /></span><span style="font-weight: 400;">This is because the aggregation of concepts (with similar and different semantic types) is a good strategy for improving the extraction of medical entities.</span></li>
+</ol>
+</ol>
+</ol>
+<p>&nbsp;</p>
+<ul>
+<li><strong><strong>QuickUMLS</strong></strong></li>
+</ul>
+<p>&nbsp;</p>
+<ol>
+<ol>
+<li style="font-weight: 400;"><span style="font-weight: 400;">Used with 3 different word lexicons for extracting synonyms. (WordNet, MeSH and UMLS) on the dataset given initially.</span></li>
+<li style="font-weight: 400;"><span style="font-weight: 400;">For all the three, a combined ranking method was used so as to incorporate the frequency and number of synonyms for any medical entity identified.</span></li>
+<li style="font-weight: 400;"><span style="font-weight: 400;">Since MeSH uses a hierarchical system to store the descriptors or subject headings and a MeSHTrie was used for indexing and searching the same, a higher score can be observed when compared to WordNet and UMLS lexicons across all metrics(BLEU, ROUGE_L, SkipThoughtSim and Flesch Kincaid Score).</span><span style="font-weight: 400;"><br /><br /></span></li>
+</ol>
+</ol>
+<table>
+<tbody>
+<tr>
+<td>
+<p><strong>Lexicon used</strong></p>
+</td>
+<td>
+<p><strong>BLEU Score</strong></p>
+</td>
+<td>
+<p><strong>ROUGE_L(P)</strong></p>
+</td>
+<td>
+<p><strong>ROUGE_L(R)</strong></p>
+</td>
+<td>
+<p><strong>ROUGE_L(F1)</strong></p>
+</td>
+<td>
+<p><strong>SkipThoughtSim Score</strong></p>
+</td>
+<td>
+<p><strong>Flesch Kincaid Score</strong><strong><br /></strong><strong>(prediction - ground_truth)</strong></p>
+</td>
+</tr>
+<tr>
+<td>
+<p><span style="font-weight: 400;">WordNet</span><span style="font-weight: 400;"><br /></span><span style="font-weight: 400;">(Using splitter + frequency)</span></p>
+</td>
+<td>
+<p><span style="font-weight: 400;"><br /></span><span style="font-weight: 400;">-</span></p>
+</td>
+<td>
+<p><span style="font-weight: 400;"><br /></span><span style="font-weight: 400;">-</span></p>
+</td>
+<td>
+<p><span style="font-weight: 400;"><br /></span><span style="font-weight: 400;">-</span></p>
+</td>
+<td>
+<p><span style="font-weight: 400;"><br /></span><span style="font-weight: 400;">-</span></p>
+</td>
+<td>
+<p><span style="font-weight: 400;"><br /></span><span style="font-weight: 400;">-</span></p>
+</td>
+<td>
+<p><span style="font-weight: 400;"><br /></span><span style="font-weight: 400;">-</span></p>
+</td>
+</tr>
+<tr>
+<td>
+<p><span style="font-weight: 400;">UMLS</span></p>
+</td>
+<td>
+<p><span style="font-weight: 400;">0.31087804</span></p>
+</td>
+<td>
+<p><span style="font-weight: 400;">0.472565</span></p>
+</td>
+<td>
+<p><span style="font-weight: 400;">0.6521224</span></p>
+</td>
+<td>
+<p><span style="font-weight: 400;">0.5480104</span></p>
+</td>
+<td>
+<p><span style="font-weight: 400;">0.84075993</span></p>
+</td>
+<td>
+<p><span style="font-weight: 400;">26.7124025974 - 54.4493506494</span></p>
+</td>
+</tr>
+<tr>
+<td>
+<p><span style="font-weight: 400;">MeSH</span></p>
+</td>
+<td>
+<p><span style="font-weight: 400;">0.41419385</span></p>
+</td>
+<td>
+<p><span style="font-weight: 400;">0.519459</span></p>
+</td>
+<td>
+<p><span style="font-weight: 400;">0.6768783</span></p>
+</td>
+<td>
+<p><span style="font-weight: 400;">0.5878121</span></p>
+</td>
+<td>
+<p><span style="font-weight: 400;">0.85821337</span></p>
+</td>
+<td>
+<p><span style="font-weight: 400;">26.0863114754 - 46.1486885246</span></p>
+</td>
+</tr>
+</tbody>
+</table>
+<p><span style="font-weight: 400;"><br /><br /></span></p>
+<p><strong>Neural Machine Translation</strong></p>
+<p>&nbsp;</p>
+<table>
+<tbody>
+<tr>
+<td>
+<p><strong>MODEL</strong></p>
+</td>
+<td>
+<p><strong>DATA</strong></p>
+</td>
+<td>
+<p><strong>BLEU score</strong></p>
+</td>
+<td>
+<p><strong>ROUGE_L(P)</strong></p>
+</td>
+<td>
+<p><strong>ROUGE_L(R)</strong></p>
+</td>
+<td>
+<p><strong>Rouge_L(F1)</strong></p>
+</td>
+<td>
+<p><strong>Skip</strong><strong><br /></strong><strong>ThoughtSim</strong></p>
+</td>
+<td>
+<p><strong>flesch </strong><strong><br /></strong><strong>kincaid </strong><strong><br /></strong><strong>Score</strong><strong><br /></strong><strong> (Readability)</strong></p>
+</td>
+</tr>
+<tr>
+<td>
+<p><strong>Wtih attention</strong><strong><br /></strong><strong>Global</strong><strong><br /></strong><strong>(reference model)</strong></p>
+</td>
+<td>
+<p><strong>Whole &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Data</strong></p>
+</td>
+<td>
+<p><span style="font-weight: 400;">0.47162418</span></p>
+</td>
+<td>
+<p><span style="font-weight: 400;">0.669419476</span></p>
+</td>
+<td>
+<p><span style="font-weight: 400;">0.6088401083</span></p>
+</td>
+<td>
+<p><span style="font-weight: 400;">0.637694301</span></p>
+</td>
+<td>
+<p><span style="font-weight: 400;">0.00596623</span></p>
+</td>
+<td>
+<p><span style="font-weight: 400;">50.0186322876-49.8039765</span></p>
+</td>
+</tr>
+<tr>
+<td>
+<p><strong>Wtih attention</strong><strong><br /></strong><strong>Global</strong><span style="font-weight: 400;"><br /></span><strong>(reference model)</strong></p>
+</td>
+<td>
+<p><strong>Medical only</strong></p>
+</td>
+<td>
+<p><span style="font-weight: 400;">0.42524666</span></p>
+</td>
+<td>
+<p><span style="font-weight: 400;">0.652262997</span></p>
+</td>
+<td>
+<p><span style="font-weight: 400;">0.5760809868</span></p>
+</td>
+<td>
+<p><span style="font-weight: 400;">0.611809584</span></p>
+</td>
+<td>
+<p><span style="font-weight: 400;">0.00952463</span></p>
+</td>
+<td>
+<p><span style="font-weight: 400;">48.8294408293-47.7228450363</span></p>
+</td>
+</tr>
+<tr>
+<td>
+<p><strong>With Simple Attention(trained for medical data only)</strong></p>
+</td>
+<td>
+<p><strong>Medical Only</strong></p>
+</td>
+<td>
+<p><span style="font-weight: 400;">0.42416590</span></p>
+</td>
+<td>
+<p><span style="font-weight: 400;">0.678898703</span></p>
+</td>
+<td>
+<p><span style="font-weight: 400;">0.5650955667</span></p>
+</td>
+<td>
+<p><span style="font-weight: 400;">0.616791663</span></p>
+</td>
+<td>
+<p><span style="font-weight: 400;">0.01832713</span></p>
+</td>
+<td>
+<p><span style="font-weight: 400;">55.7998826615-47.555780416</span></p>
+</td>
+</tr>
+<tr>
+<td>
+<p><strong>No feedback</strong></p>
+</td>
+<td>
+<p><strong>Medical Only</strong></p>
+</td>
+<td>
+<p><span style="font-weight: 400;">0.50871704</span></p>
+</td>
+<td>
+<p><span style="font-weight: 400;">0.667255821</span></p>
+</td>
+<td>
+<p><span style="font-weight: 400;">0.6445238416</span></p>
+</td>
+<td>
+<p><span style="font-weight: 400;">0.655692868</span></p>
+</td>
+<td>
+<p><span style="font-weight: 400;">0.09968956</span></p>
+</td>
+<td>
+<p><span style="font-weight: 400;">47.1933765907-47.8439737936</span></p>
+</td>
+</tr>
+</tbody>
+</table>
+<p><strong><br /></strong><strong>Readability Score(</strong><strong>flesch kincaid</strong><strong>)</strong></p>
+<ol>
+<ol>
+<li style="font-weight: 400;"><span style="font-weight: 400;">The Given model(reference paper) performs well on whole data giving a readability(flesch kincaid score) score of 50 which is higher than ground truth score(49).</span></li>
+<li style="font-weight: 400;"><span style="font-weight: 400;">The model trained only on medical data(2) gives a readability score of 55 higher than that of reference model. This is because the medical terms are generally not frequent and thus are usually low scored. Hence when explicitly trained to simplify medical terms, it performs better.</span></li>
+<li style="font-weight: 400;"><span style="font-weight: 400;">The last Model with simple attention and no input feeding, produces the same or lesser scores. This is because it simply learns to replicate the sentence.</span><span style="font-weight: 400;"><br /></span><span style="font-weight: 400;">BLEU SCORE is higher than the other 2 models for this reason.</span></li>
+</ol>
+</ol>
+<p><strong>BLEU Scores</strong></p>
+<ol>
+<ol>
+<li style="font-weight: 400;"><span style="font-weight: 400;">BLEU Scores for the Given model on medical data is less than that of the whole data since the replaced words in the sentence may result in different length outputs &nbsp;in case of medical text. Also on the whole data, non medical sentences usually have higher match than medical ones. </span><span style="font-weight: 400;"><br /></span><span style="font-weight: 400;">Similarly on the trained model(2) for medical data the bleu score is low, but the readability score(</span><span style="font-weight: 400;">flesch kincaid</span><span style="font-weight: 400;">) is high</span></li>
+</ol>
+</ol>
+<p>&nbsp;</p>
+<p><strong>ROUGE_L Scores</strong><span style="font-weight: 400;">.</span></p>
+<ol>
+<ol>
+<li style="font-weight: 400;"><span style="font-weight: 400;">The rouge_l precision and recall scores are higher in pretrained model rather than the other 2 models.</span><span style="font-weight: 400;"><br /></span><span style="font-weight: 400;">The f1 scores are highest for the pretrained model on whole data.</span><span style="font-weight: 400;"><br /></span><span style="font-weight: 400;">f1score----&gt;(pre-trained-all-data)&gt;(trained-model-medical-data)&gt;(pretrained-model-medical data).</span></li>
+<li style="font-weight: 400;"><span style="font-weight: 400;">Same pattern follows for the precision and recall values too.</span><span style="font-weight: 400;"><br /></span><span style="font-weight: 400;">Only anomaly is that all the scores are highest for the 3rd Model because it replicates the given sentences instead of simplifying it.</span></li>
+</ol>
+</ol>
